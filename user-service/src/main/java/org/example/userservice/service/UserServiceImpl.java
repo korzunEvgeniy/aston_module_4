@@ -1,6 +1,7 @@
 package org.example.userservice.service;
 
-import org.example.userservice.controller.model.UserDto;
+import org.example.userservice.model.KafkaUserEventProducer;
+import org.example.userservice.model.UserDto;
 import org.example.userservice.dao.UserDao;
 import org.example.userservice.dao.entity.User;
 import org.example.userservice.mapper.UserMapper;
@@ -13,15 +14,18 @@ import java.util.List;
 public class UserServiceImpl implements UserService{
 
     private final UserDao userDao;
+    private final KafkaUserEventProducer kafkaUserEventProducer;
 
     @Autowired
-    public UserServiceImpl(UserDao userDao) {
+    public UserServiceImpl(UserDao userDao, KafkaUserEventProducer userEventProducer) {
         this.userDao = userDao;
+        this.kafkaUserEventProducer = userEventProducer;
     }
 
     @Override
     public UserDto create(UserDto userDto) {
         User saved = UserMapper.toEntity(userDto);
+        kafkaUserEventProducer.sendUserEvent("CREATE", userDto.getEmail());
         return UserMapper.toDto(userDao.save(saved));
     }
 
@@ -44,6 +48,8 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public void delete(Long id) {
+        User deleted = userDao.findById(id).orElseThrow();
         userDao.deleteById(id);
+        kafkaUserEventProducer.sendUserEvent("DELETE", deleted.getEmail());
     }
 }

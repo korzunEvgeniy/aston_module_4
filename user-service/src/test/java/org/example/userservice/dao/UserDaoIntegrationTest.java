@@ -22,6 +22,7 @@ public class UserDaoIntegrationTest {
         User user = new User();
         user.setName("Test User");
         user.setEmail("test@example.com");
+        user.setAge(30);
 
         User saved = userDao.save(user);
         Optional<User> retrieved = userDao.findById(saved.getId());
@@ -35,10 +36,12 @@ public class UserDaoIntegrationTest {
         User user1 = new User();
         user1.setName("User One");
         user1.setEmail("one@example.com");
+        user1.setAge(29);
 
         User user2 = new User();
         user2.setName("User Two");
         user2.setEmail("two@example.com");
+        user2.setAge(25);
 
         userDao.save(user1);
         userDao.save(user2);

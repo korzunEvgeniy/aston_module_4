@@ -1,6 +1,6 @@
 package org.example.userservice.service;
 
-import org.example.userservice.controller.model.UserDto;
+import org.example.userservice.model.UserDto;
 
 import java.util.List;
 

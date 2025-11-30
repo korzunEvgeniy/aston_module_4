@@ -1,5 +1,5 @@
 FROM openjdk:21-jdk-slim
 WORKDIR /app
-EXPOSE 8082
-COPY target/user-service-*.jar app.jar
+COPY target/notification-service-*.jar app.jar
+EXPOSE 8083
 ENTRYPOINT ["java", "-jar", "app.jar"]

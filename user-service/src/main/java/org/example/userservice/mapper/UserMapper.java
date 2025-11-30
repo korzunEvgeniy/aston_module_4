@@ -1,7 +1,7 @@
 package org.example.userservice.mapper;
 
 import org.example.userservice.dao.entity.User;
-import org.example.userservice.controller.model.UserDto;
+import org.example.userservice.model.UserDto;
 import org.springframework.stereotype.Component;
 
 @Component

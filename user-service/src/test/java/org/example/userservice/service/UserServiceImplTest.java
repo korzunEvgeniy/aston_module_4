@@ -3,7 +3,7 @@ package org.example.userservice.service;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-import org.example.userservice.controller.model.UserDto;
+import org.example.userservice.model.UserDto;
 import org.example.userservice.dao.UserDao;
 import org.example.userservice.dao.entity.User;
 import org.junit.jupiter.api.BeforeEach;
