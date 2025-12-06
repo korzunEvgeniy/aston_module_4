@@ -1,7 +1,7 @@
 package org.example.userservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.example.userservice.controller.model.UserDto;
+import org.example.userservice.model.UserDto;
 import org.example.userservice.service.UserServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
