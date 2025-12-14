@@ -1,3 +1,5 @@
+server:
+  port: 8081
 spring:
   application:
     name:
@@ -25,3 +27,9 @@ spring:
           auth: true
           starttls:
             enable: true
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+  instance:
+    prefer-ip-address: true
