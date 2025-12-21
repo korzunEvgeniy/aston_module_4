@@ -41,6 +41,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
     depends_on:
       - postgres
       - kafka
@@ -54,7 +55,7 @@ services:
       dockerfile: Dockerfile
     container_name: notification-service
     ports:
-      - "8083:8083"
+      - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
@@ -62,10 +63,26 @@ services:
       - SPRING_MAIL_PORT=587
       - SPRING_MAIL_USERNAME=your-email@gmail.com
       - SPRING_MAIL_PASSWORD=your-app-password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
     depends_on:
       - kafka
     networks:
       - app-network
+
+  eureka-server:
+    image: eureka-server:latest
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
+      - EUREKA_CLIENT_FETCH_REGISTRY=false
+
+  gateway:
+    image: gateway:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
 
   postgres:
     image: postgres:18-alpine
@@ -86,7 +103,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - "8080:8080"
+      - "8083:8083"
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:29092
