@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  config-server:
+    image: config-server:latest
+    build:
+      context: ./configuration-service
+      dockerfile: Dockerfile
+    container_name: config-server
+    restart: always
+    ports:
+      - "8888:8888"
+    environment:
+      SPRING_PROFILES_ACTIVE: native
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+    volumes:
+      - config_data:/app/config
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -35,16 +50,22 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
     depends_on:
-      - postgres
-      - kafka
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      kafka:
+        condition: service_started
+      postgres:
+        condition: service_started
     networks:
       - app-network
 
@@ -54,35 +75,64 @@ services:
       context: ./notification-service
       dockerfile: Dockerfile
     container_name: notification-service
+    restart: always
     ports:
       - "8081:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-      - SPRING_MAIL_HOST=smtp.gmail.com
-      - SPRING_MAIL_PORT=587
-      - SPRING_MAIL_USERNAME=your-email@gmail.com
-      - SPRING_MAIL_PASSWORD=your-app-password
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: your-email@gmail.com
+      SPRING_MAIL_PASSWORD: your-app-password
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
     depends_on:
-      - kafka
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+      kafka:
+        condition: service_started
     networks:
       - app-network
 
   eureka-server:
     image: eureka-server:latest
+    build:
+      context: ./eureka-server
+      dockerfile: DockerFile
+    container_name: eureka-server
+    restart: always
     ports:
       - "8761:8761"
+    volumes:
+      - config_data:/app/config
     environment:
-      - EUREKA_CLIENT_REGISTER_WITH_EUREKA=false
-      - EUREKA_CLIENT_FETCH_REGISTRY=false
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      CONFIGURATION_SERVICE_URL: http://config-server:8888
+      EUREKA_CLIENT_REGISTER_WITH_EUREKA: false
+      EUREKA_CLIENT_FETCH_REGISTRY: false
+    depends_on:
+      config-server:
+        condition: service_started
 
   gateway:
     image: gateway:latest
+    build:
+      context: ./api-gateway
+      dockerfile: DockerFile
+    container_name: api-gateway
+    restart: always
     ports:
       - "8080:8080"
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka
+      CONFIGURATION_SERVICE_URL: http://config-server/8888
+    depends_on:
+      config-server:
+        condition: service_started
+      eureka-server:
+        condition: service_started
 
   postgres:
     image: postgres:18-alpine
@@ -90,10 +140,10 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=user_db
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user_db
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -109,13 +159,17 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
     depends_on:
-      - kafka
-      - zookeeper
+      kafka:
+        condition: service_started
+      zookeeper:
+        condition: service_started
     networks:
       - app-network
 
 volumes:
   postgres_data:
+  kafka_data:
+  config_data:
 
 networks:
   app-network:
